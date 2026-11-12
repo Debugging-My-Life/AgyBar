@@ -1,0 +1,11 @@
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/xcode
+.swiftpm/configuration
+
+# Local Agent Workspace Rules & Skills (Contains personal vault paths)
+GEMINI.md
+.agents/
