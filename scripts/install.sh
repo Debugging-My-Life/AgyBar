@@ -98,12 +98,15 @@ cat <<EOF > "$PLIST_FILE"
 </plist>
 EOF
 
-# LaunchAgent 로드 (로그인 시 상시 기동)
+# LaunchAgent 로드 (RunAtLoad=true로 인해 이때 백그라운드 프로세스가 자동 기동됨)
 launchctl unload "$PLIST_FILE" 2>/dev/null || true
 launchctl load "$PLIST_FILE" 2>/dev/null || true
 
-# 8. 앱 즉시 실행
-open "$APP_DIR"
+# 프로세스 기동 확인 (launchctl로 기동되지 않은 경우에만 open 실행)
+sleep 0.5
+if ! pgrep -f "$MACOS_DIR/AgyBar" > /dev/null; then
+    open "$APP_DIR"
+fi
 
 echo -e "${CYAN}======================================================${NC}"
 echo -e "${GREEN}🎉 AgyBar가 성공적으로 설치 및 상단 메뉴바에 기동되었습니다!${NC}"
