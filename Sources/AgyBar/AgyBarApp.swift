@@ -24,8 +24,13 @@ struct AgyBarApp: App {
         } label: {
             HStack(spacing: 3) {
                 Image(systemName: "sparkles")
-                Text("⚡️\(service.argonPercent)% 🚀\(service.flashPercent)%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                if service.isConnected || service.hasData {
+                    Text("🚀\(service.geminiPercent)% 🧠\(service.claudePercent)% ⚡️\(service.argonPercent)%")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                } else {
+                    Text("🚀--% 🧠--% ⚡️--%")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                }
             }
         }
         .menuBarExtraStyle(.window)

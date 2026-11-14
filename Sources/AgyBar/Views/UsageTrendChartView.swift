@@ -12,51 +12,65 @@ public struct UsageTrendChartView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("📈 데일리 소모 추이 (지난 7일)")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.secondary)
                 Spacer()
                 Text("소모량 %")
-                    .font(.system(size: 10))
+                    .font(.system(size: 9))
                     .foregroundColor(.secondary)
             }
             
-            Chart(usagePoints) { point in
-                BarMark(
-                    x: .value("Day", point.dayLabel),
-                    y: .value("Used", point.usedPercent)
-                )
-                .foregroundStyle(by: .value("Model", point.modelName))
-                .cornerRadius(3)
-            }
-            .chartForegroundStyleScale([
-                "Argon": Color.orange,
-                "Flash": Color.green,
-                "Claude": Color.blue
-            ])
-            .chartLegend(position: .top, alignment: .trailing, spacing: 8)
-            .chartYAxis {
-                AxisMarks(position: .leading) { value in
-                    AxisGridLine().foregroundStyle(Color.primary.opacity(0.08))
-                    AxisValueLabel() {
-                        if let intVal = value.as(Int.self) {
-                            Text("\(intVal)%").font(.system(size: 9))
+            if usagePoints.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text("충분한 사용 기록이 누적되면 7일간의 소모 추이가 표시됩니다")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 95)
+            } else {
+                Chart(usagePoints) { point in
+                    BarMark(
+                        x: .value("Day", point.dayLabel),
+                        y: .value("Used", point.usedPercent)
+                    )
+                    .foregroundStyle(by: .value("Model", point.modelName))
+                    .cornerRadius(2.5)
+                }
+                .chartForegroundStyleScale([
+                    "Gemini": Color.green,
+                    "Claude/GPT": Color.blue,
+                    "Argon": Color.orange
+                ])
+                .chartLegend(position: .top, alignment: .trailing, spacing: 8)
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine().foregroundStyle(Color.primary.opacity(0.06))
+                        AxisValueLabel() {
+                            if let intVal = value.as(Int.self) {
+                                Text("\(intVal)%").font(.system(size: 8.5))
+                            }
                         }
                     }
                 }
-            }
-            .chartXAxis {
-                AxisMarks { _ in
-                    AxisValueLabel().font(.system(size: 10, weight: .medium))
+                .chartXAxis {
+                    AxisMarks { _ in
+                        AxisValueLabel().font(.system(size: 9, weight: .medium))
+                    }
                 }
+                .frame(height: 100)
             }
-            .frame(height: 110)
         }
         .padding(10)
         .background(Color.primary.opacity(0.03))
-        .cornerRadius(12)
+        .cornerRadius(10)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.primary.opacity(0.07), lineWidth: 1)
         )
     }
 }

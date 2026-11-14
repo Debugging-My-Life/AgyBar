@@ -30,9 +30,11 @@ public struct CircularGaugeView: View {
                 .animation(.easeInOut(duration: 0.6), value: percent)
             
             // Percentage Label
-            Text("\(percent)%")
-                .font(.system(size: size * 0.28, weight: .bold, design: .rounded))
+            Text(percent >= 0 ? "\(percent)%" : "--%")
+                .font(.system(size: size * 0.27, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
         }
         .frame(width: size, height: size)
     }
