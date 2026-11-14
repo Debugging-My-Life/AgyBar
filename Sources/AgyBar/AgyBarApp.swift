@@ -32,6 +32,8 @@ struct AgyBarApp: App {
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 }
             }
+            .foregroundColor(service.isConnected ? .primary : .secondary)
+            .opacity(service.isConnected ? 1.0 : 0.65)
         }
         .menuBarExtraStyle(.window)
     }

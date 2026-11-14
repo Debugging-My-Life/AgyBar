@@ -64,8 +64,8 @@ public struct PopoverContentView: View {
                 .font(.system(size: 9.5, weight: .bold))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.blue.opacity(0.12))
-                .foregroundColor(.blue)
+                .background(service.isConnected ? Color.blue.opacity(0.12) : Color.primary.opacity(0.06))
+                .foregroundColor(service.isConnected ? .blue : .secondary)
                 .cornerRadius(4)
             
             // Credits Summary Badge (Prompt / Flow)
@@ -106,24 +106,42 @@ public struct PopoverContentView: View {
     private var bentoCardsView: some View {
         VStack(spacing: 8) {
             if let gemini = service.geminiGroup {
-                DualGaugeBentoCard(group: gemini)
+                DualGaugeBentoCard(group: gemini, isOffline: !service.isConnected)
             }
             
             if let claude = service.claudeGroup {
-                DualGaugeBentoCard(group: claude)
+                DualGaugeBentoCard(group: claude, isOffline: !service.isConnected)
             }
             
             if let argon = service.argonGroup {
-                ArgonWideBentoCard(group: argon)
+                ArgonWideBentoCard(group: argon, isOffline: !service.isConnected)
             }
             
             if service.groups.isEmpty {
                 VStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("쿼터 정보를 불러오는 중...")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                    if service.isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("쿼터 정보를 불러오는 중...")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Image(systemName: "wifi.slash")
+                            .font(.system(size: 18))
+                            .foregroundColor(.secondary.opacity(0.7))
+                        Text("Antigravity 미실행 (Offline)")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundColor(.secondary)
+                        Text("Antigravity를 실행하면 60초 내 자동 연결됩니다.")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary.opacity(0.8))
+                        Button(action: { service.refresh() }) {
+                            Label("다시 연결", systemImage: "arrow.clockwise")
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 120)
@@ -214,6 +232,7 @@ public struct PopoverContentView: View {
 // MARK: - Bento Card 1 & 2: Dual Gauge Layout (Weekly + 5-Hour)
 struct DualGaugeBentoCard: View {
     let group: ModelGroup
+    var isOffline: Bool = false
     
     var body: some View {
         VStack(spacing: 8) {
@@ -265,10 +284,11 @@ struct DualGaugeBentoCard: View {
     }
     
     private func gaugeColumn(title: String, bucket: QuotaBucket) -> some View {
-        HStack(spacing: 8) {
+        let displayColor: Color = isOffline ? Color.gray.opacity(0.65) : bucket.statusColor
+        return HStack(spacing: 8) {
             CircularGaugeView(
                 percent: bucket.remainingPercent,
-                color: bucket.statusColor,
+                color: displayColor,
                 lineWidth: 3.8,
                 size: 42
             )
@@ -276,11 +296,11 @@ struct DualGaugeBentoCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.primary.opacity(0.85))
+                    .foregroundColor(.primary.opacity(isOffline ? 0.65 : 0.85))
                 
                 Text("\(bucket.remainingPercent)% 잔여")
                     .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                    .foregroundColor(bucket.statusColor)
+                    .foregroundColor(isOffline ? .secondary : bucket.statusColor)
                 
                 HStack(spacing: 2) {
                     Image(systemName: "clock")
@@ -312,11 +332,13 @@ struct DualGaugeBentoCard: View {
 // MARK: - Bento Card 3: Argon Wide Card Layout
 struct ArgonWideBentoCard: View {
     let group: ModelGroup
+    var isOffline: Bool = false
     
     var body: some View {
         let weekly = group.weeklyBucket ?? group.buckets.first
         let remainingPercent = weekly?.remainingPercent ?? group.minRemainingPercent
-        let statusColor = weekly?.statusColor ?? .green
+        let rawStatusColor = weekly?.statusColor ?? .green
+        let displayColor: Color = isOffline ? Color.gray.opacity(0.65) : rawStatusColor
         let resetCountdown = weekly?.formattedResetCountdown ?? "-"
         
         VStack(spacing: 8) {
@@ -336,7 +358,7 @@ struct ArgonWideBentoCard: View {
                 // Circular Gauge
                 CircularGaugeView(
                     percent: remainingPercent,
-                    color: statusColor,
+                    color: displayColor,
                     lineWidth: 4.2,
                     size: 46
                 )
@@ -346,11 +368,11 @@ struct ArgonWideBentoCard: View {
                     HStack {
                         Text("Weekly Limit")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.primary.opacity(0.85))
+                            .foregroundColor(.primary.opacity(isOffline ? 0.65 : 0.85))
                         Spacer()
                         Text("\(remainingPercent)% 잔여")
                             .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                            .foregroundColor(statusColor)
+                            .foregroundColor(isOffline ? .secondary : rawStatusColor)
                     }
                     
                     // Capsule Progress Bar
@@ -360,7 +382,7 @@ struct ArgonWideBentoCard: View {
                                 .fill(Color.primary.opacity(0.08))
                                 .frame(height: 6)
                             Capsule()
-                                .fill(statusColor)
+                                .fill(displayColor)
                                 .frame(
                                     width: geo.size.width * CGFloat(max(0, min(100, remainingPercent))) / 100.0,
                                     height: 6
