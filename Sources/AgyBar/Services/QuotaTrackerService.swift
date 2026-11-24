@@ -38,20 +38,12 @@ public class QuotaTrackerService: ObservableObject {
         groups.first(where: { $0.id == "claude" })
     }
     
-    public var argonGroup: ModelGroup? {
-        groups.first(where: { $0.id == "argon" })
-    }
-    
     public var geminiPercent: Int {
         geminiGroup?.minRemainingPercent ?? 100
     }
     
     public var claudePercent: Int {
         claudeGroup?.minRemainingPercent ?? 100
-    }
-    
-    public var argonPercent: Int {
-        argonGroup?.minRemainingPercent ?? 100
     }
     
     public var hasData: Bool {
@@ -121,36 +113,31 @@ public class QuotaTrackerService: ObservableObject {
                     )
                 }
                 
-                if name.localizedCaseInsensitiveContains("Argon") {
-                    parsedGroups.append(ModelGroup(
-                        id: "argon",
-                        name: "Gemini 4 Argon",
-                        icon: "⚡️",
-                        subtext: "Argon Dedicated Quota",
-                        buckets: buckets
-                    ))
-                } else if name.localizedCaseInsensitiveContains("Claude") || name.localizedCaseInsensitiveContains("GPT") {
+                if name.localizedCaseInsensitiveContains("Claude")
+                    || name.localizedCaseInsensitiveContains("GPT")
+                    || buckets.contains(where: { $0.bucketId.lowercased().hasPrefix("3p") }) {
                     parsedGroups.append(ModelGroup(
                         id: "claude",
-                        name: "Claude & GPT",
+                        name: "Claude Models",
                         icon: "🧠",
-                        subtext: "Sonnet / Opus / GPT-OSS",
+                        subtext: "Sonnet 5.5 / Opus 5.5",
                         buckets: buckets
                     ))
-                } else if name.localizedCaseInsensitiveContains("Gemini") {
+                } else if name.localizedCaseInsensitiveContains("Gemini")
+                    || buckets.contains(where: { $0.bucketId.lowercased().hasPrefix("gemini") }) {
                     parsedGroups.append(ModelGroup(
                         id: "gemini",
                         name: "Gemini Models",
                         icon: "🚀",
-                        subtext: "Flash / Pro / Hydrogen",
+                        subtext: "Carbon / Neon / Hydrogen",
                         buckets: buckets
                     ))
                 }
             }
         }
         
-        // Standard Bento ordering: Gemini -> Claude -> Argon
-        let order = ["gemini", "claude", "argon"]
+        // Standard Bento ordering: Gemini -> Claude
+        let order = ["gemini", "claude"]
         self.groups = order.compactMap { id in parsedGroups.first(where: { $0.id == id }) }
         
         // Update daily usage tracking
@@ -225,19 +212,16 @@ public class QuotaTrackerService: ObservableObject {
         
         let geminiUsed = Double(max(0, 100 - geminiPercent))
         let claudeUsed = Double(max(0, 100 - claudePercent))
-        let argonUsed = Double(max(0, 100 - argonPercent))
         
         if let idx = dailyRecords.firstIndex(where: { $0.dateKey == todayKey }) {
             dailyRecords[idx].geminiUsed = max(dailyRecords[idx].geminiUsed, geminiUsed)
             dailyRecords[idx].claudeUsed = max(dailyRecords[idx].claudeUsed, claudeUsed)
-            dailyRecords[idx].argonUsed = max(dailyRecords[idx].argonUsed, argonUsed)
         } else {
             let newRecord = DailyUsageRecord(
                 dateKey: todayKey,
                 date: now,
                 geminiUsed: geminiUsed,
-                claudeUsed: claudeUsed,
-                argonUsed: argonUsed
+                claudeUsed: claudeUsed
             )
             dailyRecords.append(newRecord)
         }
@@ -266,8 +250,7 @@ public class QuotaTrackerService: ObservableObject {
             let isToday = (record.dateKey == todayKey)
             let label = isToday ? "오늘" : dayFormatter.string(from: record.date)
             points.append(DailyUsagePoint(date: record.date, dayLabel: label, modelName: "Gemini", usedPercent: record.geminiUsed))
-            points.append(DailyUsagePoint(date: record.date, dayLabel: label, modelName: "Claude/GPT", usedPercent: record.claudeUsed))
-            points.append(DailyUsagePoint(date: record.date, dayLabel: label, modelName: "Argon", usedPercent: record.argonUsed))
+            points.append(DailyUsagePoint(date: record.date, dayLabel: label, modelName: "Claude", usedPercent: record.claudeUsed))
         }
         self.trendHistory = points
     }
@@ -307,7 +290,32 @@ public class QuotaTrackerService: ObservableObject {
             self.planName = cache.planName
             self.promptCredits = cache.promptCredits
             self.flowCredits = cache.flowCredits
-            self.groups = cache.groups
+            let normalizedGroups: [ModelGroup] = cache.groups
+                .filter { $0.id != "argon" }
+                .map { group in
+                    switch group.id {
+                    case "gemini":
+                        return ModelGroup(
+                            id: "gemini",
+                            name: "Gemini Models",
+                            icon: group.icon,
+                            subtext: "Carbon / Neon / Hydrogen",
+                            buckets: group.buckets
+                        )
+                    case "claude":
+                        return ModelGroup(
+                            id: "claude",
+                            name: "Claude Models",
+                            icon: group.icon,
+                            subtext: "Sonnet 5.5 / Opus 5.5",
+                            buckets: group.buckets
+                        )
+                    default:
+                        return group
+                    }
+                }
+            let order = ["gemini", "claude"]
+            self.groups = order.compactMap { id in normalizedGroups.first(where: { $0.id == id }) }
             self.dailyRecords = cache.records
             rebuildTrendHistory()
             return
@@ -326,13 +334,10 @@ public class QuotaTrackerService: ObservableObject {
                     dateKey: key,
                     date: point.date,
                     geminiUsed: 0,
-                    claudeUsed: 0,
-                    argonUsed: 0
+                    claudeUsed: 0
                 )
                 if point.modelName == "Flash" || point.modelName == "Gemini" {
                     rec.geminiUsed = point.usedPercent
-                } else if point.modelName == "Argon" {
-                    rec.argonUsed = point.usedPercent
                 } else if point.modelName.contains("Claude") {
                     rec.claudeUsed = point.usedPercent
                 }

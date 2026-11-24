@@ -144,7 +144,7 @@ public struct QuotaBucket: Identifiable, Codable {
 }
 
 public struct ModelGroup: Identifiable, Codable {
-    public let id: String // "gemini", "claude", "argon"
+    public let id: String // "gemini", "claude"
     public let name: String
     public let icon: String
     public let subtext: String
@@ -176,7 +176,7 @@ public struct DailyUsagePoint: Identifiable, Codable {
     public var id = UUID()
     public var date: Date
     public var dayLabel: String
-    public var modelName: String // "Gemini", "Claude/GPT", "Argon"
+    public var modelName: String // "Gemini", "Claude"
     public var usedPercent: Double
     
     public init(id: UUID = UUID(), date: Date, dayLabel: String, modelName: String, usedPercent: Double) {
@@ -193,14 +193,12 @@ public struct DailyUsageRecord: Codable {
     public let date: Date
     public var geminiUsed: Double
     public var claudeUsed: Double
-    public var argonUsed: Double
     
-    public init(dateKey: String, date: Date, geminiUsed: Double, claudeUsed: Double, argonUsed: Double) {
+    public init(dateKey: String, date: Date, geminiUsed: Double, claudeUsed: Double) {
         self.dateKey = dateKey
         self.date = date
         self.geminiUsed = geminiUsed
         self.claudeUsed = claudeUsed
-        self.argonUsed = argonUsed
     }
 }
 

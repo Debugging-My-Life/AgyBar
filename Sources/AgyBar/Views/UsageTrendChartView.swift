@@ -43,8 +43,7 @@ public struct UsageTrendChartView: View {
                 }
                 .chartForegroundStyleScale([
                     "Gemini": Color.green,
-                    "Claude/GPT": Color.blue,
-                    "Argon": Color.orange
+                    "Claude": Color.blue
                 ])
                 .chartLegend(position: .top, alignment: .trailing, spacing: 8)
                 .chartYAxis {

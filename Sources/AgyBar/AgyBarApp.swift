@@ -25,10 +25,10 @@ struct AgyBarApp: App {
             HStack(spacing: 3) {
                 Image(systemName: "sparkles")
                 if service.isConnected || service.hasData {
-                    Text("🚀\(service.geminiPercent)% 🧠\(service.claudePercent)% ⚡️\(service.argonPercent)%")
+                    Text("🚀\(service.geminiPercent)% 🧠\(service.claudePercent)%")
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 } else {
-                    Text("🚀--% 🧠--% ⚡️--%")
+                    Text("🚀--% 🧠--%")
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 }
             }

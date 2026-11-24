@@ -13,7 +13,7 @@ public struct PopoverContentView: View {
             // MARK: - 1. Header
             headerView
             
-            // MARK: - 2. Bento Cards (3 Groups)
+            // MARK: - 2. Bento Cards (2 Groups)
             bentoCardsView
             
             // MARK: - 3. Daily Usage Trend Chart
@@ -113,10 +113,6 @@ public struct PopoverContentView: View {
                 DualGaugeBentoCard(group: claude, isOffline: !service.isConnected)
             }
             
-            if let argon = service.argonGroup {
-                ArgonWideBentoCard(group: argon, isOffline: !service.isConnected)
-            }
-            
             if service.groups.isEmpty {
                 VStack(spacing: 8) {
                     if service.isLoading {
@@ -211,20 +207,19 @@ public struct PopoverContentView: View {
         if !service.isConnected && !service.hasData {
             return "Antigravity 데몬에 연결되지 않았습니다. Antigravity를 실행해 주세요."
         }
-        let argon = service.argonPercent
         let gemini = service.geminiPercent
         let claude = service.claudePercent
         
-        if argon <= 25 {
-            return "⚡️ Argon 소진 임박(\(argon)%). 대화 및 일반 작업은 Gemini 또는 Claude 활용 권장"
-        } else if gemini <= 30 && claude > 50 {
-            return "🚀 Gemini 잔여 \(gemini)%. 여유 있는 Claude & GPT(\(claude)%) 활용 권장"
-        } else if claude <= 30 && gemini > 50 {
-            return "🧠 Claude & GPT 잔여 \(claude)%. Gemini Flash/Pro(\(gemini)%) 활용 권장"
-        } else if argon == 100 && gemini == 100 && claude == 100 {
+        if gemini <= 30 && claude <= 30 {
+            return "⚠️ Gemini(\(gemini)%)·Claude(\(claude)%) 잔여량 부족. 리셋 시간을 확인하세요."
+        } else if gemini <= 30 {
+            return "🚀 Gemini 잔여 \(gemini)%. 여유 있는 Claude 5.5(\(claude)%) 활용 권장"
+        } else if claude <= 30 {
+            return "🧠 Claude 잔여 \(claude)%. 여유 있는 Gemini(\(gemini)%) 활용 권장"
+        } else if gemini == 100 && claude == 100 {
             return "✨ 모든 모델 쿼터가 100% 최상의 상태입니다. 마음껏 작업하세요!"
         } else {
-            return "💡 쿼터 상태 양호: Argon \(argon)%, Gemini \(gemini)%, Claude \(claude)%"
+            return "💡 쿼터 상태 양호: Gemini \(gemini)%, Claude \(claude)%"
         }
     }
 }
@@ -326,91 +321,5 @@ struct DualGaugeBentoCard: View {
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - Bento Card 3: Argon Wide Card Layout
-struct ArgonWideBentoCard: View {
-    let group: ModelGroup
-    var isOffline: Bool = false
-    
-    var body: some View {
-        let weekly = group.weeklyBucket ?? group.buckets.first
-        let remainingPercent = weekly?.remainingPercent ?? group.minRemainingPercent
-        let rawStatusColor = weekly?.statusColor ?? .green
-        let displayColor: Color = isOffline ? Color.gray.opacity(0.65) : rawStatusColor
-        let resetCountdown = weekly?.formattedResetCountdown ?? "-"
-        
-        VStack(spacing: 8) {
-            // Header
-            HStack(spacing: 4) {
-                Text(group.icon)
-                    .font(.system(size: 11))
-                Text(group.name)
-                    .font(.system(size: 11.5, weight: .bold))
-                Spacer()
-                Text("Argon Dedicated Quota")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-            }
-            
-            HStack(spacing: 12) {
-                // Circular Gauge
-                CircularGaugeView(
-                    percent: remainingPercent,
-                    color: displayColor,
-                    lineWidth: 4.2,
-                    size: 46
-                )
-                
-                // Details + Progress Bar
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Weekly Limit")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.primary.opacity(isOffline ? 0.65 : 0.85))
-                        Spacer()
-                        Text("\(remainingPercent)% 잔여")
-                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                            .foregroundColor(isOffline ? .secondary : rawStatusColor)
-                    }
-                    
-                    // Capsule Progress Bar
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.primary.opacity(0.08))
-                                .frame(height: 6)
-                            Capsule()
-                                .fill(displayColor)
-                                .frame(
-                                    width: geo.size.width * CGFloat(max(0, min(100, remainingPercent))) / 100.0,
-                                    height: 6
-                                )
-                        }
-                    }
-                    .frame(height: 6)
-                    
-                    HStack(spacing: 3) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 8))
-                        Text(resetCountdown)
-                            .font(.system(size: 8.5))
-                        Spacer()
-                        Text("High / Medium / Low")
-                            .font(.system(size: 8.5))
-                            .foregroundColor(.secondary.opacity(0.8))
-                    }
-                    .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding(10)
-        .background(Color.primary.opacity(0.035))
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-        )
     }
 }
